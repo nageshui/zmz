@@ -1,7 +1,22 @@
 # zmz
 自动将字幕组收藏更新同步下载至群晖nas
 
-1、配置文件为zmz.json 
-zmz节点配置字幕组的用户名和密码。以及下载片源分辨率的优先级。如resolution 配置的顺序为MP4,720P 当有MP4 片源时优先下载，无MP4片源也会下载720P
-nas节点配置群晖nas的用户名、密码及url
+# 配置文件示例
+{
+	"zmz": {
+		"account": "",
+		"password": "",
+		"resolution":"MP4,720P,1080P,HDTV,RMVB"
+	},
+	"nas": {
+		"url": "https://ip:5001",
+		"account": "",
+		"passwd": ""
+	}
+}
+# zmz节点
+配置字幕组的用户名和密码以及下载片源的优先级
+
+# nas节点
+配置群晖nas的用户名、密码及http地址
 
