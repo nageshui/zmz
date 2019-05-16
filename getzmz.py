@@ -83,6 +83,11 @@ class Zmz:
         real_page = self.session.get(real_url, headers=self.headers)
         tree = html.fromstring(real_page.text)
         sidetabs = tree.xpath('//*[@id="menu"]/li')
+
+        #电影的sidetab和电视剧不同
+        if sidetabs is None:
+            sidetabs = tree.xpath('//*[@id="scrollspy"]/ul/li/ul/li')
+
         for sidetab in sidetabs:
             sideid = ''.join(sidetab.xpath('./a/@href'))
             sidename = ''.join(sidetab.xpath('./a/text()'))
