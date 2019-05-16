@@ -13,6 +13,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 def getpath():
     return os.path.split(os.path.realpath(__file__))[0]
 
+
 class Movie():
     def __init__(self):
         self.nameEn = ''
@@ -69,8 +70,9 @@ class Zmz:
         return resp_json['status']
 
     def getFilm(self, movie):
+        isMoive = False
         movieList = []
-        # print(movie.nameEn)
+        print(movie.nameEn)
         film_page = self.session.get(movie.url, headers=self.headers)
         pos = film_page.text.find('{')
         film_info = film_page.text[pos:]
@@ -84,14 +86,16 @@ class Zmz:
         tree = html.fromstring(real_page.text)
         sidetabs = tree.xpath('//*[@id="menu"]/li')
 
-        #电影的sidetab和电视剧不同
-        if sidetabs is None:
-            sidetabs = tree.xpath('//*[@id="scrollspy"]/ul/li/ul/li')
+        # 电影的sidetab和电视剧不同
+        #print('sidetabs:' + '\t' + str(len(sidetabs)))
+        if len(sidetabs) == 0:
+            isMoive = True
+            sidetabs = tree.xpath('//*[@id="scrollspy"]/ul/li')
 
         for sidetab in sidetabs:
             sideid = ''.join(sidetab.xpath('./a/@href'))
             sidename = ''.join(sidetab.xpath('./a/text()'))
-            print(sidename)
+            #print(sideid + '\t' + sidename)
             res = sidetab.xpath('//*[@id=\"' + sideid[1:] + '\"]/ul/li')
             # 解析不同的季
             for re in res:
@@ -101,13 +105,11 @@ class Zmz:
                 hrefs = ''.join(hrefs)[1:]
                 if 'APP' in hrefs:
                     continue
-                print(hrefs)
-                # fp.write('1333:' + hrefs[1:] + '\n')
+                #print('解析季' + hrefs)
                 down_urls = tree.xpath('//*[@id=\"' + hrefs + '\"]/ul/li')
                 # 解析同一季不同分辨率
                 for li in down_urls:
                     film_name = ''.join(li.xpath('./div/span[1]/text()'))
-                    # fp.write(film_name + '\n')
                     season = ''
                     episode = ''
                     film_name = film_name.split(' ')
@@ -122,7 +124,7 @@ class Zmz:
                     for links in li.xpath('./ul/li'):
                         down_type = ''.join(links.xpath('./a/p/text()'))
                         film_downurl = ''.join(links.xpath('./a/@href'))
-                        # print(down_type +":"+ film_downurl)
+                        #print(down_type + '\t' + film_downurl)
 
                         if 'thunder' in film_downurl:
                             thunder = film_downurl
@@ -131,7 +133,7 @@ class Zmz:
                             # fp.write(down_type +":"+ film_downurl + '\n')
                     hrefs = hrefs.split('-')
                     if len(hrefs) >= 1:
-                        hrefs = hrefs[- 1]
+                        hrefs = hrefs[-1]
                     tmp_data = (movie.nameCn, movie.nameEn, season, episode, magnet, thunder, hrefs, 0)
                     movieList.append(tmp_data)
 
@@ -140,7 +142,7 @@ class Zmz:
             cur = conn.cursor()
             cur.executemany(self.sql, movieList)
             conn.commit()
-            print('保存' + movie.nameCn)
+            print('保存' + '\t' + movie.nameCn)
         except (sqlite3.OperationalError, sqlite3.IntegrityError) as e:
             print('插入movies失败:' + '\t' + e.args[0])
         finally:
@@ -200,7 +202,6 @@ class Nas:
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0.1 Safari/605.1.15'
         }
-
 
     def getPath(self):
         if 'https' in self.url:
@@ -305,7 +306,7 @@ def getZMZ():
 
     nas.getPath()
     nas.loginDS()
-    zmz.unDown = []
+    #zmz.unDown = []
     if len(zmz.unDown) >= 1:
         for magnet in zmz.unDown:
             flag = nas.putTask(str(magnet))
