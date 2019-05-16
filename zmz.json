@@ -1,0 +1,12 @@
+{
+	"zmz": {
+		"account": "",
+		"password": "",
+		"resolution":"MP4,720P,1080P,HDTV,RMVB"
+	},
+	"nas": {
+		"url": "https://ip:5001",
+		"account": "",
+		"passwd": ""
+	}
+}
