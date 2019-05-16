@@ -63,7 +63,6 @@ class Zmz:
         payload = {'account': self.account, 'password': self.password, 'remember': '2',
                    'url_back': 'http%3A%2F%2Fwww.zmz2019.com%2F'}
         r = self.session.post('http://www.zmz2019.com/User/Login/ajaxLogin', payload, headers=self.headers)
-        # print(r.text)
         c = requests.cookies.RequestsCookieJar()  # 利用RequestsCookieJar获取
         self.session.cookies.update(c)
         resp_json = json.loads(r.text)
