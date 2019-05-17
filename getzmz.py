@@ -58,7 +58,6 @@ class Zmz:
             movie.rid = rid[- 1]
             movie.url = self.domain_url + '/resource/index_json/rid/' + movie.rid + '/channel/tv'
             self.favMovies.append(movie)
-            # print(self.favMovies)
 
     def loginZmz(self):
         payload = {'account': self.account, 'password': self.password, 'remember': '2',
@@ -79,7 +78,6 @@ class Zmz:
         film_json = json.loads(film_info)
         real_url = film_json['resource_content']
         tree = html.fromstring(str(real_url))
-        # print(real_url)
         real_url = tree.xpath('//div[1]/div[1]/h3[1]/a/@href')
         real_url = ''.join(real_url)
         real_page = self.session.get(real_url, headers=self.headers)
@@ -87,7 +85,6 @@ class Zmz:
         sidetabs = tree.xpath('//*[@id="menu"]/li')
 
         # 电影的sidetab和电视剧不同
-        #print('sidetabs:' + '\t' + str(len(sidetabs)))
         if len(sidetabs) == 0:
             isMoive = True
             sidetabs = tree.xpath('//*[@id="scrollspy"]/ul/li')
@@ -95,7 +92,6 @@ class Zmz:
         for sidetab in sidetabs:
             sideid = ''.join(sidetab.xpath('./a/@href'))
             sidename = ''.join(sidetab.xpath('./a/text()'))
-            #print(sideid + '\t' + sidename)
             res = sidetab.xpath('//*[@id=\"' + sideid[1:] + '\"]/ul/li')
             # 解析不同的季
             for re in res:
@@ -103,9 +99,8 @@ class Zmz:
                 down_name = ''.join(down_name)
                 hrefs = re.xpath('./a/@href')
                 hrefs = ''.join(hrefs)[1:]
-                if 'APP' in hrefs:
+                if 'APP' or '预告片' or '游戏' in hrefs:
                     continue
-                #print('解析季' + hrefs)
                 down_urls = tree.xpath('//*[@id=\"' + hrefs + '\"]/ul/li')
                 # 解析同一季不同分辨率
                 for li in down_urls:
@@ -116,7 +111,6 @@ class Zmz:
                     if len(film_name) >= 2:
                         season = film_name[0]
                         episode = film_name[1]
-                    # print(film_name)
 
                     # 解析不同的集
                     magnet = ''
@@ -124,13 +118,11 @@ class Zmz:
                     for links in li.xpath('./ul/li'):
                         down_type = ''.join(links.xpath('./a/p/text()'))
                         film_downurl = ''.join(links.xpath('./a/@href'))
-                        #print(down_type + '\t' + film_downurl)
 
                         if 'thunder' in film_downurl:
                             thunder = film_downurl
                         elif 'magnet' in film_downurl:
                             magnet = film_downurl
-                            # fp.write(down_type +":"+ film_downurl + '\n')
                     hrefs = hrefs.split('-')
                     if len(hrefs) >= 1:
                         hrefs = hrefs[-1]
@@ -173,7 +165,6 @@ class Zmz:
                         print('未查询到分辨率' + '\t' + resolution)
                     else:
                         if row[1] == 0:
-                            # print(str(row[1]) + '\t' + row[0])
                             self.unDown.append(row[0])
                         break
         finally:
@@ -212,12 +203,9 @@ class Nas:
             resp_data = self.session.get(
                 self.url + '/webapi/query.cgi?api=SYNO.API.Info&version=1&method=query&query=SYNO.API.Auth,SYNO.DownloadStation.Task',
                 headers=self.headers)
-        # print(resp_data.text)
         resp_json = json.loads(resp_data.text)
         self.DownloadStationTask = '/webapi/' + str(resp_json['data']['SYNO.DownloadStation.Task']['path'])
         self.AuthUrl = '/webapi/' + str(resp_json['data']['SYNO.API.Auth']['path'])
-        # print(self.DownloadStationTask)
-        # print(self.AuthUrl)
 
     def loginDS(self):
         if 'https' in self.url:
@@ -241,7 +229,6 @@ class Nas:
             resp_data = self.session.get(
                 self.url + self.DownloadStationTask + '?api=SYNO.DownloadStation.Task&version=1&method=list',
                 headers=self.headers)
-        # print(resp_data.text)
         resp_json = json.loads(resp_data.text)
         tasks = resp_json['data']['tasks']
         for task in tasks:
@@ -253,8 +240,6 @@ class Nas:
             elif 'finished' in str(status):
                 self.taskerrorList.append(str(id))
 
-        print(self.taskerrorList)
-
     def putTask(self, downloadUrl):
         downuri = {'api': 'SYNO.DownloadStation.Task', 'version': '1', 'method': 'create', 'uri': str(downloadUrl)}
         if 'https' in self.url:
@@ -262,7 +247,6 @@ class Nas:
                                           headers=self.headers)
         else:
             resp_data = self.session.post(self.url + self.DownloadStationTask, downuri, headers=self.headers)
-        # print(resp_data.text)
         resp_json = json.loads(resp_data.text)
         return resp_json['success']
 
@@ -306,7 +290,6 @@ def getZMZ():
 
     nas.getPath()
     nas.loginDS()
-    #zmz.unDown = []
     if len(zmz.unDown) >= 1:
         for magnet in zmz.unDown:
             flag = nas.putTask(str(magnet))
