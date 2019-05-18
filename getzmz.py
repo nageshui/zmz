@@ -41,9 +41,10 @@ class Zmz:
         }
         self.dbpath = getpath() + '/zmz.db'
 
-    def getFav(self):
-        fav_page = self.session.get('http://www.zmz2019.com/user/fav', headers=self.headers)
+    def getFav(self, page):
+        fav_page = self.session.get('http://www.zmz2019.com/user/fav' + str(page), headers=self.headers)
         tree = html.fromstring(fav_page.text)
+
         films = tree.xpath('/html/body/div[2]/div/div/div[2]/div/ul/li')
         self.favMovie = []
         for film in films:
@@ -58,6 +59,16 @@ class Zmz:
             movie.rid = rid[- 1]
             movie.url = self.domain_url + '/resource/index_json/rid/' + movie.rid + '/channel/tv'
             self.favMovies.append(movie)
+
+
+        pages = tree.xpath('//div[@class="pages"]/div/a')
+        for tmp in pages:
+            nextpage = ''.join(tmp.xpath('./text()'))
+            print(nextpage)
+            if '下一页' in nextpage:
+                nextpage = ''.join(tmp.xpath('./@href'))
+                self.getFav(nextpage)
+
 
     def loginZmz(self):
         payload = {'account': self.account, 'password': self.password, 'remember': '2',
@@ -282,7 +293,7 @@ def getZMZ():
         nas.passwd = temp['nas']['passwd']
 
     zmz.loginZmz()
-    zmz.getFav()
+    zmz.getFav('')
     for movie in zmz.favMovies:
         zmz.getFilm(movie)
 
