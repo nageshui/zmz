@@ -8,6 +8,7 @@ import time
 from datetime import datetime
 import os
 from apscheduler.schedulers.blocking import BlockingScheduler
+import argparse
 
 
 def getpath():
@@ -21,9 +22,10 @@ class Movie():
         self.url = ''
         self.rid = ''
         self.sidetabs = []
+        self.isMoive = False
 
     def toTuble(self):
-        return (self.nameEn, self.nameCn, self.url, self.rid)
+        return (self.nameEn, self.nameCn, self.url, self.rid, self.isMoive)
 
 
 class Zmz:
@@ -44,7 +46,6 @@ class Zmz:
     def getFav(self, page):
         fav_page = self.session.get('http://www.zmz2019.com/user/fav' + str(page), headers=self.headers)
         tree = html.fromstring(fav_page.text)
-
         films = tree.xpath('/html/body/div[2]/div/div/div[2]/div/ul/li')
         self.favMovie = []
         for film in films:
@@ -57,13 +58,18 @@ class Zmz:
             film_url = ''.join(film_url)
             rid = film_url.split('/')
             movie.rid = rid[- 1]
-            movie.url = self.domain_url + '/resource/index_json/rid/' + movie.rid + '/channel/tv'
+            if '电影' in movie.nameCn:
+                movie.url = self.domain_url + '/resource/index_json/rid/' + movie.rid + '/channel/movie'
+                movie.isMoive = True
+            else:
+                movie.url = self.domain_url + '/resource/index_json/rid/' + movie.rid + '/channel/tv'
+                movie.isMoive = False
             self.favMovies.append(movie)
 
         pages = tree.xpath('//div[@class="pages"]/div/a')
         for tmp in pages:
             nextpage = ''.join(tmp.xpath('./text()'))
-            #print(nextpage)
+            # print(nextpage)
             if '下一页' in nextpage:
                 nextpage = ''.join(tmp.xpath('./@href'))
                 self.getFav(nextpage)
@@ -80,23 +86,31 @@ class Zmz:
     def getFilm(self, movie):
         isMoive = False
         movieList = []
-        print(movie.nameEn)
+        print(movie.toTuble())
         film_page = self.session.get(movie.url, headers=self.headers)
         pos = film_page.text.find('{')
         film_info = film_page.text[pos:]
         film_json = json.loads(film_info)
         real_url = film_json['resource_content']
+
         tree = html.fromstring(str(real_url))
         real_url = tree.xpath('//div[1]/div[1]/h3[1]/a/@href')
         real_url = ''.join(real_url)
         real_page = self.session.get(real_url, headers=self.headers)
         tree = html.fromstring(real_page.text)
+
+        if movie.isMoive:
+            sidetabs = tree.xpath('//*[@id="scrollspy"]/ul/li')
+        else:
+            sidetabs = tree.xpath('//*[@id="menu"]/li')
+        """
         sidetabs = tree.xpath('//*[@id="menu"]/li')
 
         # 电影的sidetab和电视剧不同
         if len(sidetabs) == 0:
             isMoive = True
             sidetabs = tree.xpath('//*[@id="scrollspy"]/ul/li')
+        """
 
         for sidetab in sidetabs:
             sideid = ''.join(sidetab.xpath('./a/@href'))
@@ -108,8 +122,13 @@ class Zmz:
                 down_name = ''.join(down_name)
                 hrefs = re.xpath('./a/@href')
                 hrefs = ''.join(hrefs)[1:]
-                if 'APP' or '预告片' or '游戏' in hrefs:
+                if 'APP' in hrefs:
                     continue
+                elif '预告片' in hrefs:
+                    continue
+                elif '游戏' in hrefs:
+                    continue
+
                 down_urls = tree.xpath('//*[@id=\"' + hrefs + '\"]/ul/li')
                 # 解析同一季不同分辨率
                 for li in down_urls:
@@ -184,6 +203,15 @@ class Zmz:
             sql = 'update movies set flag = ? where magnet = ?;'
             conn = sqlite3.connect(self.dbpath)
             conn.execute(sql, (1, magnet,))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def first(self):
+        try:
+            sql = 'update movies set flag = ?;'
+            conn = sqlite3.connect(self.dbpath)
+            conn.execute(sql, (1,))
             conn.commit()
         finally:
             conn.close()
@@ -295,8 +323,10 @@ def getZMZ():
     for movie in zmz.favMovies:
         zmz.getFilm(movie)
 
-    zmz.selectUndown()
+    if args.init == 1:
+        zmz.first()
 
+    zmz.selectUndown()
     nas.getPath()
     nas.loginDS()
     if len(zmz.unDown) >= 1:
@@ -310,6 +340,10 @@ def getZMZ():
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='manual to this script')
+    parser.add_argument('--init', type=int, default=0)
+    args = parser.parse_args()
+    # print(args.init)
     getZMZ()
     """
     scheduler = BlockingScheduler()
