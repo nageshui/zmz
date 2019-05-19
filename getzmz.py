@@ -60,15 +60,13 @@ class Zmz:
             movie.url = self.domain_url + '/resource/index_json/rid/' + movie.rid + '/channel/tv'
             self.favMovies.append(movie)
 
-
         pages = tree.xpath('//div[@class="pages"]/div/a')
         for tmp in pages:
             nextpage = ''.join(tmp.xpath('./text()'))
-            print(nextpage)
+            #print(nextpage)
             if '下一页' in nextpage:
                 nextpage = ''.join(tmp.xpath('./@href'))
                 self.getFav(nextpage)
-
 
     def loginZmz(self):
         payload = {'account': self.account, 'password': self.password, 'remember': '2',
