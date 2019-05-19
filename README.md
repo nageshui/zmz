@@ -4,14 +4,14 @@
 # 配置文件示例
 {
 	"zmz": {
-		"account": "",
-		"password": "",
-		"resolution":"MP4,720P,1080P,HDTV,RMVB"
+	    "account": "",
+	    "password": "",
+	    "resolution":"MP4,720P,1080P,HDTV,RMVB"
 	},
 	"nas": {
-		"url": "https://ip:5001",
-		"account": "",
-		"passwd": ""
+	    "url": "https://ip:5001",
+	    "account": "",
+	    "passwd": ""
 	}
 }
 # zmz节点
@@ -20,15 +20,19 @@
 # nas节点
 配置群晖nas的用户名、密码及http地址
 
-#部署方法
+# 部署方法
 我是直接在群晖上部署的，方法如下：
-#1、安装python3
+# 1、安装python3
 在群晖套件中心直接安装Python3。然后SSH登录群晖切换到root用户，然后安装pip3
 参考 http://sonavox.top/blog/index.php/DSM/24.html
-#2、定时任务
-![Image text](https://github.com/nageshui/zmz/tree/master/img/1.jpg)
-![image](https://github.com/nageshui/zmz/tree/master/img/2.jpg)
-![image](https://github.com/nageshui/zmz/tree/master/img/3.jpg)
+# 2、定时任务
+![Image][image-1]
+![image][image-2]
+![image][image-3]
 在群晖的控制面板-》任务计划里新增一条。
 
 首次运行传入--init=1 参数，默认已下载所有视频。如：python3 getzmz.py --init=1
+
+[image-1]:	https://github.com/nageshui/zmz/tree/master/image/1.jpg
+[image-2]:	https://github.com/nageshui/zmz/tree/master/image/2.jpg
+[image-3]:	https://github.com/nageshui/zmz/tree/master/image/3.jpg
