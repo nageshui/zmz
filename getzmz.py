@@ -278,12 +278,12 @@ class Nas:
                 self.taskerrorList.append(str(id))
 
     def putTask(self, downloadUrl):
-        downuri = {'api': 'SYNO.DownloadStation.Task', 'version': '1', 'method': 'create', 'uri': str(downloadUrl)}
+        downForm = {'api': 'SYNO.DownloadStation.Task', 'version': '1', 'method': 'create', 'uri': str(downloadUrl)}
         if 'https' in self.url:
-            resp_data = self.session.post(self.url + self.DownloadStationTask, downuri, verify=False,
+            resp_data = self.session.post(self.url + self.DownloadStationTask, downForm, verify=False,
                                           headers=self.headers)
         else:
-            resp_data = self.session.post(self.url + self.DownloadStationTask, downuri, headers=self.headers)
+            resp_data = self.session.post(self.url + self.DownloadStationTask, downForm, headers=self.headers)
         resp_json = json.loads(resp_data.text)
         return resp_json['success']
 
