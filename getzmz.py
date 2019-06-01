@@ -9,6 +9,7 @@ from datetime import datetime
 import os
 from apscheduler.schedulers.blocking import BlockingScheduler
 import argparse
+import urllib.parse
 
 
 def getpath():
@@ -64,6 +65,7 @@ class Zmz:
             else:
                 movie.url = self.domain_url + '/resource/index_json/rid/' + movie.rid + '/channel/tv'
                 movie.isMoive = False
+
             self.favMovies.append(movie)
 
         pages = tree.xpath('//div[@class="pages"]/div/a')
@@ -82,6 +84,75 @@ class Zmz:
         self.session.cookies.update(c)
         resp_json = json.loads(r.text)
         return resp_json['status']
+
+    def getFilmByJson(self, movie):
+        isMoive = False
+        movieList = []
+        print(movie.toTuble())
+        film_page = self.session.get(movie.url, headers=self.headers)
+        pos = film_page.text.find('{')
+        film_info = film_page.text[pos:]
+        film_json = json.loads(film_info)
+        real_url = film_json['resource_content']
+        tree = html.fromstring(str(real_url))
+        real_url = tree.xpath('//div[1]/div[1]/h3[1]/a/@href')
+        real_url = ''.join(real_url).split('?')
+        ym = urllib.parse.urlparse(real_url[0]).hostname
+        scheme = urllib.parse.urlparse(real_url[0]).scheme
+
+        print(scheme + '://' + ym + '/api/v1/static/resource/detail?' + real_url[1])
+        real_page = self.session.get(scheme + '://' + ym + '/api/v1/static/resource/detail?' + real_url[1],
+                                     headers=self.headers)
+
+        # print(str(real_page.text))
+        film_json = json.loads(str(real_page.text))
+        nameCn = film_json['data']['info']['cnname']
+        nameEn = film_json['data']['info']['enname']
+
+        #print(film_json['data']['list'])
+        for season in film_json['data']['list']:
+            seasonname = season['season_cn']
+            #print(seasonname)
+            if '周边资源' in seasonname:
+                continue
+            # 解析不同的分辨率
+            for item, itemvalue in season['items'].items():
+                #print(item)
+                if 'APP' in item:
+                    continue
+
+                if isinstance(itemvalue, list):
+                    for detail in itemvalue:
+                        episode = detail['episode']
+                        #print(episode)
+                        if detail['files'] == None:
+                            print( 'is None')
+                            continue
+                        # print(detail['files'])
+                        for way in detail['files']:
+                            magnet = ''
+                            thunder = ''
+                            if 'thunder' in way['address']:
+                                thunder = way['address']
+                            elif 'magnet' in way['address']:
+                                magnet = way['address']
+
+                            if len(magnet)<=0 and len(thunder)<=0:
+                                continue
+                            tmp_data = (nameCn, nameEn, seasonname, episode, magnet, thunder, item, 0)
+                            movieList.append(tmp_data)
+
+        try:
+            #print(movieList)
+            conn = sqlite3.connect(self.dbpath)
+            cur = conn.cursor()
+            cur.executemany(self.sql, movieList)
+            conn.commit()
+            print('保存' + '\t' + movie.nameCn)
+        except (sqlite3.OperationalError, sqlite3.IntegrityError) as e:
+            print('插入movies失败:' + '\t' + e.args[0])
+        finally:
+            conn.close()
 
     def getFilm(self, movie):
         isMoive = False
@@ -158,6 +229,7 @@ class Zmz:
                     movieList.append(tmp_data)
 
         try:
+            print(movieList)
             conn = sqlite3.connect(self.dbpath)
             cur = conn.cursor()
             cur.executemany(self.sql, movieList)
@@ -321,7 +393,8 @@ def getZMZ():
     zmz.loginZmz()
     zmz.getFav('')
     for movie in zmz.favMovies:
-        zmz.getFilm(movie)
+       zmz.getFilmByJson(movie)
+
 
     if args.init == 1:
         zmz.first()
