@@ -7,6 +7,7 @@ import sqlite3
 import time
 from datetime import datetime
 import os
+# from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.schedulers.blocking import BlockingScheduler
 import argparse
 import urllib.parse
@@ -94,6 +95,8 @@ class Zmz:
         film_info = film_page.text[pos:]
         film_json = json.loads(film_info)
         real_url = film_json['resource_content']
+        if len(real_url) <= 0:
+            return
         tree = html.fromstring(str(real_url))
         real_url = tree.xpath('//div[1]/div[1]/h3[1]/a/@href')
         real_url = ''.join(real_url).split('?')
@@ -109,24 +112,24 @@ class Zmz:
         nameCn = film_json['data']['info']['cnname']
         nameEn = film_json['data']['info']['enname']
 
-        #print(film_json['data']['list'])
+        # print(film_json['data']['list'])
         for season in film_json['data']['list']:
             seasonname = season['season_cn']
-            #print(seasonname)
+            # print(seasonname)
             if '周边资源' in seasonname:
                 continue
             # 解析不同的分辨率
             for item, itemvalue in season['items'].items():
-                #print(item)
+                # print(item)
                 if 'APP' in item:
                     continue
 
                 if isinstance(itemvalue, list):
                     for detail in itemvalue:
                         episode = detail['episode']
-                        #print(episode)
+                        # print(episode)
                         if detail['files'] == None:
-                            print( 'is None')
+                            print('is None')
                             continue
                         # print(detail['files'])
                         for way in detail['files']:
@@ -137,18 +140,32 @@ class Zmz:
                             elif 'magnet' in way['address']:
                                 magnet = way['address']
 
-                            if len(magnet)<=0 and len(thunder)<=0:
+                            if len(magnet) <= 0 and len(thunder) <= 0:
                                 continue
                             tmp_data = (nameCn, nameEn, seasonname, episode, magnet, thunder, item, 0)
-                            movieList.append(tmp_data)
-
+                            self.insertMoive(tmp_data)
+                            # movieList.append(tmp_data)
+        """
         try:
-            #print(movieList)
+            print(movieList)
             conn = sqlite3.connect(self.dbpath)
             cur = conn.cursor()
             cur.executemany(self.sql, movieList)
             conn.commit()
             print('保存' + '\t' + movie.nameCn)
+        except (sqlite3.OperationalError, sqlite3.IntegrityError) as e:
+            print('插入movies失败:' + '\t' + e.args[0])
+        finally:
+            conn.close()
+        """
+
+    def insertMoive(self, movieData):
+        try:
+            conn = sqlite3.connect(self.dbpath)
+            cur = conn.cursor()
+            cur.execute(self.sql, movieData)
+            conn.commit()
+            print('保存' + '\t' + str(movieData))
         except (sqlite3.OperationalError, sqlite3.IntegrityError) as e:
             print('插入movies失败:' + '\t' + e.args[0])
         finally:
@@ -393,8 +410,7 @@ def getZMZ():
     zmz.loginZmz()
     zmz.getFav('')
     for movie in zmz.favMovies:
-       zmz.getFilmByJson(movie)
-
+        zmz.getFilmByJson(movie)
 
     if args.init == 1:
         zmz.first()
