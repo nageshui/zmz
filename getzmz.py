@@ -88,7 +88,6 @@ class Zmz:
 
     def getFilmByJson(self, movie):
         isMoive = False
-        movieList = []
         print(movie.toTuble())
         film_page = self.session.get(movie.url, headers=self.headers)
         pos = film_page.text.find('{')
@@ -99,6 +98,8 @@ class Zmz:
             return
         tree = html.fromstring(str(real_url))
         real_url = tree.xpath('//div[1]/div[1]/h3[1]/a/@href')
+        if len(real_url) <= 0:
+            return
         real_url = ''.join(real_url).split('?')
         ym = urllib.parse.urlparse(real_url[0]).hostname
         scheme = urllib.parse.urlparse(real_url[0]).scheme
@@ -144,20 +145,6 @@ class Zmz:
                                 continue
                             tmp_data = (nameCn, nameEn, seasonname, episode, magnet, thunder, item, 0)
                             self.insertMoive(tmp_data)
-                            # movieList.append(tmp_data)
-        """
-        try:
-            print(movieList)
-            conn = sqlite3.connect(self.dbpath)
-            cur = conn.cursor()
-            cur.executemany(self.sql, movieList)
-            conn.commit()
-            print('保存' + '\t' + movie.nameCn)
-        except (sqlite3.OperationalError, sqlite3.IntegrityError) as e:
-            print('插入movies失败:' + '\t' + e.args[0])
-        finally:
-            conn.close()
-        """
 
     def insertMoive(self, movieData):
         try:
