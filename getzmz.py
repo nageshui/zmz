@@ -46,36 +46,40 @@ class Zmz:
         self.dbpath = getpath() + '/zmz.db'
 
     def getFav(self, page):
-        fav_page = self.session.get('http://www.zmz2019.com/user/fav' + str(page), headers=self.headers)
-        tree = html.fromstring(fav_page.text)
-        films = tree.xpath('/html/body/div[2]/div/div/div[2]/div/ul/li')
-        self.favMovie = []
-        for film in films:
-            movie = Movie()
-            film_name_en = film.xpath('./div[2]/p[1]/text()')
-            film_name_cn = film.xpath('./div[2]/div[1]/strong/a/text()')
-            movie.nameEn = ''.join(film_name_en)
-            movie.nameCn = ''.join(film_name_cn)
-            film_url = film.xpath('./div[2]/div[1]/strong/a/@href')
-            film_url = ''.join(film_url)
-            rid = film_url.split('/')
-            movie.rid = rid[- 1]
-            if '电影' in movie.nameCn:
-                movie.url = self.domain_url + '/resource/index_json/rid/' + movie.rid + '/channel/movie'
-                movie.isMoive = True
-            else:
-                movie.url = self.domain_url + '/resource/index_json/rid/' + movie.rid + '/channel/tv'
-                movie.isMoive = False
+        try:
+            fav_page = self.session.get('http://www.zmz2019.com/user/fav' + str(page), headers=self.headers)
+            tree = html.fromstring(fav_page.text)
+            films = tree.xpath('/html/body/div[2]/div/div/div[2]/div/ul/li')
+            self.favMovie = []
+            for film in films:
+                movie = Movie()
+                film_name_en = film.xpath('./div[2]/p[1]/text()')
+                film_name_cn = film.xpath('./div[2]/div[1]/strong/a/text()')
+                movie.nameEn = ''.join(film_name_en)
+                movie.nameCn = ''.join(film_name_cn)
+                film_url = film.xpath('./div[2]/div[1]/strong/a/@href')
+                film_url = ''.join(film_url)
+                rid = film_url.split('/')
+                movie.rid = rid[- 1]
+                if '电影' in movie.nameCn:
+                    movie.url = self.domain_url + '/resource/index_json/rid/' + movie.rid + '/channel/movie'
+                    movie.isMoive = True
+                else:
+                    movie.url = self.domain_url + '/resource/index_json/rid/' + movie.rid + '/channel/tv'
+                    movie.isMoive = False
 
-            self.favMovies.append(movie)
+                self.favMovies.append(movie)
 
-        pages = tree.xpath('//div[@class="pages"]/div/a')
-        for tmp in pages:
-            nextpage = ''.join(tmp.xpath('./text()'))
-            # print(nextpage)
-            if '下一页' in nextpage:
-                nextpage = ''.join(tmp.xpath('./@href'))
-                self.getFav(nextpage)
+            pages = tree.xpath('//div[@class="pages"]/div/a')
+            for tmp in pages:
+                nextpage = ''.join(tmp.xpath('./text()'))
+                # print(nextpage)
+                if '下一页' in nextpage:
+                    nextpage = ''.join(tmp.xpath('./@href'))
+                    self.getFav(nextpage)
+
+        except Exception as e:
+            print(e.args[0]);
 
     def loginZmz(self):
         payload = {'account': self.account, 'password': self.password, 'remember': '2',
@@ -87,64 +91,68 @@ class Zmz:
         return resp_json['status']
 
     def getFilmByJson(self, movie):
-        isMoive = False
-        print(movie.toTuble())
-        film_page = self.session.get(movie.url, headers=self.headers)
-        pos = film_page.text.find('{')
-        film_info = film_page.text[pos:]
-        film_json = json.loads(film_info)
-        real_url = film_json['resource_content']
-        if len(real_url) <= 0:
-            return
-        tree = html.fromstring(str(real_url))
-        real_url = tree.xpath('//div[1]/div[1]/h3[1]/a/@href')
-        if len(real_url) <= 0:
-            return
-        real_url = ''.join(real_url).split('?')
-        ym = urllib.parse.urlparse(real_url[0]).hostname
-        scheme = urllib.parse.urlparse(real_url[0]).scheme
+        try:
+            isMoive = False
+            print(movie.toTuble())
+            film_page = self.session.get(movie.url, headers=self.headers)
+            pos = film_page.text.find('{')
+            film_info = film_page.text[pos:]
+            film_json = json.loads(film_info)
+            real_url = film_json['resource_content']
+            if len(real_url) <= 0:
+                return
+            tree = html.fromstring(str(real_url))
+            real_url = tree.xpath('//div[1]/div[1]/h3[1]/a/@href')
+            if len(real_url) <= 0:
+                return
+            real_url = ''.join(real_url).split('?')
+            ym = urllib.parse.urlparse(real_url[0]).hostname
+            scheme = urllib.parse.urlparse(real_url[0]).scheme
 
-        print(scheme + '://' + ym + '/api/v1/static/resource/detail?' + real_url[1])
-        real_page = self.session.get(scheme + '://' + ym + '/api/v1/static/resource/detail?' + real_url[1],
-                                     headers=self.headers)
+            print(scheme + '://' + ym + '/api/v1/static/resource/detail?' + real_url[1])
+            real_page = self.session.get(scheme + '://' + ym + '/api/v1/static/resource/detail?' + real_url[1],
+                                         headers=self.headers)
 
-        # print(str(real_page.text))
-        film_json = json.loads(str(real_page.text))
-        nameCn = film_json['data']['info']['cnname']
-        nameEn = film_json['data']['info']['enname']
+            # print(str(real_page.text))
+            film_json = json.loads(str(real_page.text))
+            nameCn = film_json['data']['info']['cnname']
+            nameEn = film_json['data']['info']['enname']
 
-        # print(film_json['data']['list'])
-        for season in film_json['data']['list']:
-            seasonname = season['season_cn']
-            # print(seasonname)
-            if '周边资源' in seasonname:
-                continue
-            # 解析不同的分辨率
-            for item, itemvalue in season['items'].items():
-                # print(item)
-                if 'APP' in item:
+            # print(film_json['data']['list'])
+            for season in film_json['data']['list']:
+                seasonname = season['season_cn']
+                # print(seasonname)
+                if '周边资源' in seasonname:
                     continue
+                # 解析不同的分辨率
+                for item, itemvalue in season['items'].items():
+                    # print(item)
+                    if 'APP' in item:
+                        continue
 
-                if isinstance(itemvalue, list):
-                    for detail in itemvalue:
-                        episode = detail['episode']
-                        # print(episode)
-                        if detail['files'] == None:
-                            print('is None')
-                            continue
-                        # print(detail['files'])
-                        for way in detail['files']:
-                            magnet = ''
-                            thunder = ''
-                            if 'thunder' in way['address']:
-                                thunder = way['address']
-                            elif 'magnet' in way['address']:
-                                magnet = way['address']
-
-                            if len(magnet) <= 0 and len(thunder) <= 0:
+                    if isinstance(itemvalue, list):
+                        for detail in itemvalue:
+                            episode = detail['episode']
+                            # print(episode)
+                            if detail['files'] == None:
+                                print('is None')
                                 continue
-                            tmp_data = (nameCn, nameEn, seasonname, episode, magnet, thunder, item, 0)
-                            self.insertMoive(tmp_data)
+                            # print(detail['files'])
+                            for way in detail['files']:
+                                magnet = ''
+                                thunder = ''
+                                if 'thunder' in way['address']:
+                                    thunder = way['address']
+                                elif 'magnet' in way['address']:
+                                    magnet = way['address']
+
+                                if len(magnet) <= 0 and len(thunder) <= 0:
+                                    continue
+                                tmp_data = (nameCn, nameEn, seasonname, episode, magnet, thunder, item, 0)
+                                self.insertMoive(tmp_data)
+
+        except Exception as e:
+            print(e.args[0]);
 
     def insertMoive(self, movieData):
         try:
@@ -405,6 +413,7 @@ def getZMZ():
     zmz.selectUndown()
     nas.getPath()
     nas.loginDS()
+    print(zmz.unDown)
     if len(zmz.unDown) >= 1:
         for magnet in zmz.unDown:
             flag = nas.putTask(str(magnet))
