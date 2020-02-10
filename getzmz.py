@@ -35,7 +35,7 @@ class Zmz:
         self.account = ''  # 账号
         self.password = ''  # 密码
         self.session = requests.session()
-        self.domain_url = 'http://www.zmz2019.com'
+        self.domain_url = 'http://www.rrys2019.com'
         self.sql = 'INSERT INTO movies (namecn, nameen, season, episode, magnet, thunder, resolution, flag) VALUES (?,?,?,?,?,?,?,?);'
         self.favMovies = []
         self.resolution = ''
@@ -47,7 +47,7 @@ class Zmz:
 
     def getFav(self, page):
         try:
-            fav_page = self.session.get('http://www.zmz2019.com/user/fav' + str(page), headers=self.headers)
+            fav_page = self.session.get('http://www.rrys2019.com/user/fav' + str(page), headers=self.headers)
             tree = html.fromstring(fav_page.text)
             films = tree.xpath('/html/body/div[2]/div/div/div[2]/div/ul/li')
             self.favMovie = []
@@ -83,8 +83,8 @@ class Zmz:
 
     def loginZmz(self):
         payload = {'account': self.account, 'password': self.password, 'remember': '2',
-                   'url_back': 'http%3A%2F%2Fwww.zmz2019.com%2F'}
-        r = self.session.post('http://www.zmz2019.com/User/Login/ajaxLogin', payload, headers=self.headers)
+                   'url_back': 'http%3A%2F%2Fwww.rrys2019.com%2F'}
+        r = self.session.post('http://www.rrys2019.com/User/Login/ajaxLogin', payload, headers=self.headers)
         c = requests.cookies.RequestsCookieJar()  # 利用RequestsCookieJar获取
         self.session.cookies.update(c)
         resp_json = json.loads(r.text)
