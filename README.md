@@ -27,13 +27,11 @@
 在群晖套件中心直接安装Python3。然后SSH登录群晖切换到root用户，然后安装pip3
 参考 http://sonavox.top/blog/index.php/DSM/24.html
 ## 2、定时任务
-![Image][image-1]
-![image][image-2]
-![image][image-3]
+![](https://raw.githubusercontent.com/nageshui/zmz/master/image/1.jpg)
+![](https://raw.githubusercontent.com/nageshui/zmz/master/image/2.jpg)
+![](https://raw.githubusercontent.com/nageshui/zmz/master/image/3.jpg)
 在群晖的控制面板-》任务计划里新增一条。
 
 首次运行传入--init=1 参数，默认已下载所有视频。如：python3 getzmz.py --init=1
 
-[image-1]:	https://github.com/nageshui/zmz/tree/master/image/1.jpg
-[image-2]:	https://github.com/nageshui/zmz/tree/master/image/2.jpg
-[image-3]:	https://github.com/nageshui/zmz/tree/master/image/3.jpg
+
