@@ -19,7 +19,7 @@ get==2019.3.22
 hyperlink==18.0.0
 idna==2.8
 incremental==17.5.0
-lxml==4.3.3
+lxml==4.6.2
 numpy==1.16.2
 opencv-python==4.0.0.21
 parsel==1.5.1
