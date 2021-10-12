@@ -21,7 +21,7 @@ idna==2.8
 incremental==17.5.0
 lxml==4.3.3
 numpy==1.16.2
-opencv-python==4.0.0.21
+opencv-python==4.2.0.32
 parsel==1.5.1
 Pillow==6.0.0
 post==2019.3.22
